@@ -30,7 +30,8 @@ export default function LoginPage() {
       if (user.role === 'CUSTOMER') router.push('/upload');
       else router.push('/shop/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Check your credentials.');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(', ') : (typeof msg === 'string' ? msg : 'Login failed. Check your credentials.'));
     } finally {
       setLoading(false);
     }

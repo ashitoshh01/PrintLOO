@@ -27,7 +27,8 @@ function SignupForm() {
       });
       router.push('/login?registered=true');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Signup failed.');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(', ') : (typeof msg === 'string' ? msg : 'Signup failed.'));
     } finally {
       setLoading(false);
     }
