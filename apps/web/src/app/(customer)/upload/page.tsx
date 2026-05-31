@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FileUploader from '@/components/upload/FileUploader';
 import PrintConfigForm from '@/components/upload/PrintConfigForm';
@@ -24,21 +24,32 @@ export default function UploadPage() {
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState('');
 
+  // Debounce timer ref — prevents firing a pricing API call on every single keystroke / config change
+  const pricingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Step 1: Handle upload complete
   const handleUploadComplete = (fileId: string, fileUrl: string, pageCount: number, fileName?: string) => {
     setFileData({ id: fileId, url: fileUrl, pages: pageCount, name: fileName || 'Document.pdf' });
     setStep(1);
   };
 
-  // Step 2: Handle config changes and fetch price
+  // Step 2: Handle config changes and fetch price — debounced 400ms so rapid changes
+  // don't produce a waterfall of requests where stale responses overwrite fresh ones.
   useEffect(() => {
     if (step >= 1 && fileData) {
-      pricingService.calculatePrice(
-        shopId,
-        config as any,
-        fileData.pages
-      ).then(res => setPricing(res.data)).catch(console.error);
+      if (pricingTimerRef.current) clearTimeout(pricingTimerRef.current);
+      pricingTimerRef.current = setTimeout(() => {
+        pricingService.calculatePrice(
+          shopId,
+          config as any,
+          fileData.pages
+        ).then(res => setPricing(res.data)).catch(console.error);
+      }, 400);
     }
+    // Cleanup: cancel any pending pricing call on unmount or before next effect run
+    return () => {
+      if (pricingTimerRef.current) clearTimeout(pricingTimerRef.current);
+    };
   }, [config, fileData, step, shopId]);
 
   // Step 3: Payment

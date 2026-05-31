@@ -21,8 +21,15 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
+      // Always clear local auth state
       useAuthStore.getState().logout();
-      if (typeof window !== 'undefined') {
+      // Only redirect to login if:
+      // 1. We are in a browser context (not SSR)
+      // 2. We are NOT already on the login page (prevents infinite redirect loop)
+      if (
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/login'
+      ) {
         window.location.href = '/login';
       }
     }

@@ -20,11 +20,17 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user, isAuthenticated: true }),
       setToken: (token) => {
         set({ token });
-        document.cookie = `auth-token=${token}; path=/; max-age=900`; // 15 min
+        // Guard: document is not available during SSR — only set cookie in browser
+        if (typeof window !== 'undefined') {
+          document.cookie = `auth-token=${token}; path=/; max-age=900`; // 15 min
+        }
       },
       logout: () => {
         set({ user: null, token: null, isAuthenticated: false });
-        document.cookie = 'auth-token=; path=/; max-age=0';
+        // Guard: document is not available during SSR — only clear cookie in browser
+        if (typeof window !== 'undefined') {
+          document.cookie = 'auth-token=; path=/; max-age=0';
+        }
       },
     }),
     { name: 'auth-storage' }

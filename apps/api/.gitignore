@@ -1,9 +1,37 @@
-# compiled output
-/dist
-/node_modules
+# ============================================================
+# apps/api — NestJS .gitignore
+# ============================================================
 
-# Logs
-logs
+# --- Compiled output ---
+dist/
+build/
+
+# --- Dependencies ---
+node_modules/
+
+# --- Uploaded user files (runtime data, not source code) ---
+uploads/
+
+# --- TypeScript ---
+*.tsbuildinfo
+
+# --- Turborepo cache ---
+.turbo/
+
+# --- Testing ---
+coverage/
+.nyc_output/
+
+# --- Environment files ---
+.env
+.env.local
+.env.test
+.env.production
+.env.*
+!.env.example
+
+# --- Logs ---
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -11,15 +39,12 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
-# OS
+# --- OS ---
 .DS_Store
+Thumbs.db
 
-# Tests
-/coverage
-/.nyc_output
-
-# IDEs and editors
-/.idea
+# --- IDEs and editors ---
+.idea/
 .project
 .classpath
 .c9/
@@ -27,18 +52,9 @@ lerna-debug.log*
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
+# --- VSCode (allow shared workspace settings) ---
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-
-# dotenv
-.env
-.env.test
-.env.production
-.env.local
-
-# Turborepo
-.turbo

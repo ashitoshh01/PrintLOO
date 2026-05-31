@@ -2,7 +2,9 @@
   "name": "printloo",
   "private": true,
   "packageManager": "npm@10.8.2",
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
