@@ -7,7 +7,7 @@ import { QueueGateway } from '../../gateways/queue.gateway';
 @Module({
   imports: [PricingModule],
   controllers: [OrdersController],
-  providers: [OrdersService, QueueGateway],
+  providers: [OrdersService],
   exports: [OrdersService],
 })
 export class OrdersModule {}

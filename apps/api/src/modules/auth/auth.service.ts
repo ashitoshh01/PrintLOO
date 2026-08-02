@@ -43,7 +43,11 @@ export class AuthService {
       },
     });
 
-    return this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    return {
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, shopId: user.shopId },
+      ...tokens,
+    };
   }
 
   async login(dto: LoginDto) {
@@ -54,23 +58,22 @@ export class AuthService {
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
-    return { user: { id: user.id, email: user.email, role: user.role, shopId: user.shopId }, ...tokens };
+    return { user: { id: user.id, name: user.name, email: user.email, role: user.role, shopId: user.shopId }, ...tokens };
   }
 
-  async refreshTokens(userId: string, token: string) {
+  async refreshTokens(token: string) {
     const refreshTokenRecord = await this.prisma.refreshToken.findUnique({ where: { token } });
     if (!refreshTokenRecord || refreshTokenRecord.expiresAt < new Date()) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
     
-    // In MVP just generate a new access token for the given user, skip checking rotation limits
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({ where: { id: refreshTokenRecord.userId } });
     if (!user) throw new UnauthorizedException('User not found');
     
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any });
+    const payload = { sub: user.id, email: user.email, role: user.role, shopId: user.shopId };
+    const token_ = this.jwtService.sign(payload, { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any });
     
-    return { accessToken };
+    return { token: token_, user: { id: user.id, name: user.name, email: user.email, role: user.role, shopId: user.shopId } };
   }
 
   async logout(userId: string) {
@@ -79,8 +82,10 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any });
+    // Look up shopId so it can be embedded in the JWT
+    const userRecord = await this.prisma.user.findUnique({ where: { id: userId }, select: { shopId: true } });
+    const payload = { sub: userId, email, role, shopId: userRecord?.shopId || null };
+    const token = this.jwtService.sign(payload, { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any });
     const refreshTokenString = this.jwtService.sign({ sub: userId }, { secret: process.env.JWT_REFRESH_SECRET || 'refresh', expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any });
 
     await this.prisma.refreshToken.create({
@@ -91,6 +96,6 @@ export class AuthService {
       },
     });
 
-    return { accessToken, refreshToken: refreshTokenString };
+    return { token, refreshToken: refreshTokenString };
   }
 }

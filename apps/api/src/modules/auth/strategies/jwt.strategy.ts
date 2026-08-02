@@ -10,7 +10,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: process.env.JWT_SECRET || 'secret',
     });
   }
-  validate(payload: { sub: string; email: string; role: string }) {
-    return { id: payload.sub, email: payload.email, role: payload.role };
+  validate(payload: { sub: string; email: string; role: string; shopId?: string }) {
+    return { id: payload.sub, email: payload.email, role: payload.role, shopId: payload.shopId || null };
   }
 }

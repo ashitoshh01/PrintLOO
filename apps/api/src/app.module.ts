@@ -15,15 +15,21 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { QueueGateway } from './gateways/queue.gateway';
+import { QueueGatewayModule } from './gateways/queue-gateway.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60, limit: 100 }]),
-    BullModule.forRoot({ redis: process.env.REDIS_URL || 'redis://localhost:6379' }),
+    BullModule.forRoot({
+      redis: {
+        host: '127.0.0.1',
+        port: 6379,
+      },
+    }),
     ServeStaticModule.forRoot({ rootPath: join(__dirname, '..', 'uploads'), serveRoot: '/files' }),
     PrismaModule,
+    QueueGatewayModule,
     AuthModule,
     UsersModule,
     ShopsModule,
@@ -35,6 +41,5 @@ import { QueueGateway } from './gateways/queue.gateway';
     QueueModule,
     AnalyticsModule,
   ],
-  providers: [QueueGateway],
 })
 export class AppModule {}

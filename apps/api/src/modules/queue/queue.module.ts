@@ -8,7 +8,7 @@ import { QueueGateway } from '../../gateways/queue.gateway';
   imports: [
     BullModule.registerQueue({ name: 'print-queue' }),
   ],
-  providers: [QueueService, QueueProcessor, QueueGateway],
+  providers: [QueueService, QueueProcessor],
   exports: [QueueService],
 })
 export class QueueModule {}
