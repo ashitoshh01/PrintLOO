@@ -80,7 +80,7 @@ export class OrdersService {
     const orders = await this.prisma.printOrder.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      include: { payment: true },
+      include: { payment: true, shop: { select: { id: true, name: true, location: true } } },
     });
     return orders.map(o => ({
       ...o,

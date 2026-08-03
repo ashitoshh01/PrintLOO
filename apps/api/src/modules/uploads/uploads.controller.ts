@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Param, UseGuards, UseInterceptors, UploadedFile, Body } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Post, Get, Param, UseGuards, UseInterceptors, UploadedFile, UploadedFiles, Body } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadsService } from './uploads.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -21,6 +21,18 @@ export class UploadsController {
     return this.uploadsService.uploadFile(file, user.id, shopId);
   }
 
+  @Post('multiple')
+  @UseInterceptors(FilesInterceptor('files', 20, {
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB per file
+  }))
+  async uploadFiles(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body('shopId') shopId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.uploadsService.uploadFiles(files, user.id, shopId);
+  }
+
   @Get(':id/preview')
   async getPreviewUrl(
     @Param('id') fileId: string,
@@ -30,3 +42,4 @@ export class UploadsController {
     return this.uploadsService.getPreviewUrl(fileId, shopId, user.id);
   }
 }
+

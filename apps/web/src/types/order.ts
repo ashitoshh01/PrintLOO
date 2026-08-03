@@ -13,6 +13,11 @@ export interface PrintConfig {
 export interface PrintOrder {
   id: string;
   shopId: string;
+  shop?: {
+    id: string;
+    name: string;
+    location: string;
+  };
   userId: string;
   fileUrl: string;
   fileName: string;
@@ -24,4 +29,13 @@ export interface PrintOrder {
   totalAmount: number;
   createdAt: string;
   updatedAt: string;
+  payment?: {
+    id: string;
+    razorpayOrderId: string;
+    razorpayPaymentId?: string;
+    amount: number;
+    currency: string;
+    status: string;
+    verifiedAt?: string;
+  };
 }
