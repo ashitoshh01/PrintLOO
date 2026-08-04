@@ -60,18 +60,29 @@ model RefreshToken {
 }
 
 model Shop {
-  id          String      @id @default(uuid())
-  name        String
-  location    String
-  contact     String
-  isActive    Boolean     @default(true)
-  settings    Json        @default("{}")
-  users       User[]
-  printers    Printer[]
-  orders      PrintOrder[]
+  id           String        @id @default(uuid())
+  name         String
+  location     String        @default("")
+  address      String?
+  city         String?
+  state        String?
+  pincode      String?
+  latitude     Float?
+  longitude    Float?
+  phone        String?
+  isOpen       Boolean       @default(true)
+  openingHours String?       @default("09:00 AM")
+  closingHours String?       @default("09:00 PM")
+  rating       Float?        @default(4.8)
+  contact      String?       @default("")
+  isActive     Boolean       @default(true)
+  settings     Json          @default("{}")
+  users        User[]
+  printers     Printer[]
+  orders       PrintOrder[]
   pricingRules PricingRule[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Printer {

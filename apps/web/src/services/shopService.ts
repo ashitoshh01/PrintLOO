@@ -1,7 +1,25 @@
 import api from './api';
+import { Shop } from '@/types/shop';
 
 export const shopService = {
-  getShop: (shopId: string) => api.get<any, { data: any }>(`/shops/${shopId}`),
+  getNearbyShops: (lat?: number, lng?: number) => {
+    const params = new URLSearchParams();
+    if (lat !== undefined && lat !== null) params.append('lat', lat.toString());
+    if (lng !== undefined && lng !== null) params.append('lng', lng.toString());
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    return api.get<any, { data: Shop[] }>(`/shops/nearby${queryStr}`);
+  },
+
+  searchShops: (q: string, lat?: number, lng?: number) => {
+    const params = new URLSearchParams();
+    if (q) params.append('q', q);
+    if (lat !== undefined && lat !== null) params.append('lat', lat.toString());
+    if (lng !== undefined && lng !== null) params.append('lng', lng.toString());
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    return api.get<any, { data: Shop[] }>(`/shops/search${queryStr}`);
+  },
+
+  getShop: (shopId: string) => api.get<any, { data: Shop }>(`/shops/${shopId}`),
   updateShop: (shopId: string, data: any) => api.patch<any, { data: any }>(`/shops/${shopId}`, data),
   getPricingRules: (shopId: string) => api.get<any, { data: any[] }>(`/shops/${shopId}/pricing`),
   updatePricingRules: (shopId: string, rules: any[]) => api.put<any, { data: any[] }>(`/shops/${shopId}/pricing`, { rules }),

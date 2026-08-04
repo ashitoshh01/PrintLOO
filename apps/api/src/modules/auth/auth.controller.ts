@@ -9,6 +9,16 @@ import { CurrentUser } from './decorators/current-user.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('send-otp')
+  async sendOtp(@Body() body: { email: string }) {
+    return this.authService.sendOtp(body.email);
+  }
+
+  @Post('verify-otp')
+  async verifyOtp(@Body() body: { email: string; otp: string }) {
+    return this.authService.verifyOtp(body.email, body.otp);
+  }
+
   @Post('signup')
   async signup(@Body() dto: SignupDto) {
     return this.authService.signup(dto);

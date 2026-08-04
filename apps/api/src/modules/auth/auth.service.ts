@@ -7,10 +7,51 @@ import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
+  private otpStore = new Map<string, { otp: string; expiresAt: number }>();
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
+
+  async sendOtp(email: string) {
+    if (!email || !email.includes('@')) {
+      throw new BadRequestException('Valid email is required');
+    }
+    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      throw new BadRequestException('Email already registered');
+    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    this.otpStore.set(email.toLowerCase(), { otp, expiresAt });
+
+    console.log(`[OTP Sent] Email: ${email}, OTP: ${otp}`);
+    return {
+      success: true,
+      message: `OTP sent to ${email}`,
+      devOtp: otp,
+    };
+  }
+
+  async verifyOtp(email: string, otp: string) {
+    if (!email || !otp) {
+      throw new BadRequestException('Email and OTP are required');
+    }
+    const record = this.otpStore.get(email.toLowerCase());
+    if (!record) {
+      throw new BadRequestException('No OTP request found for this email. Please request a new OTP.');
+    }
+    if (Date.now() > record.expiresAt) {
+      this.otpStore.delete(email.toLowerCase());
+      throw new BadRequestException('OTP has expired. Please request a new one.');
+    }
+    if (record.otp !== otp) {
+      throw new BadRequestException('Invalid OTP. Please check and try again.');
+    }
+
+    return { success: true, message: 'OTP verified successfully' };
+  }
 
   async signup(dto: SignupDto) {
     const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
