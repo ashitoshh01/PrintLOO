@@ -8,12 +8,14 @@ interface ShopState {
   favouriteShopIds: string[];
   currentLocation: { lat: number; lng: number } | null;
   permissionStatus: 'prompt' | 'granted' | 'denied' | 'unknown';
+  isLocationDisabled: boolean;
   
   setSelectedShop: (shop: Shop | null) => void;
   addRecentShop: (shop: Shop) => void;
   toggleFavouriteShop: (shopId: string) => void;
   setCurrentLocation: (loc: { lat: number; lng: number } | null) => void;
   setPermissionStatus: (status: 'prompt' | 'granted' | 'denied' | 'unknown') => void;
+  setIsLocationDisabled: (disabled: boolean) => void;
   clearSelectedShop: () => void;
 }
 
@@ -25,6 +27,7 @@ export const useShopStore = create<ShopState>()(
       favouriteShopIds: [],
       currentLocation: null,
       permissionStatus: 'unknown',
+      isLocationDisabled: false,
 
       setSelectedShop: (shop) =>
         set((state) => {
@@ -53,6 +56,7 @@ export const useShopStore = create<ShopState>()(
 
       setCurrentLocation: (currentLocation) => set({ currentLocation }),
       setPermissionStatus: (permissionStatus) => set({ permissionStatus }),
+      setIsLocationDisabled: (isLocationDisabled) => set({ isLocationDisabled }),
       clearSelectedShop: () => set({ selectedShop: null }),
     }),
     { name: 'shop-storage' }

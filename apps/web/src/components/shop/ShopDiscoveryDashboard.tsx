@@ -34,6 +34,8 @@ export default function ShopDiscoveryDashboard() {
     setCurrentLocation,
     permissionStatus,
     setPermissionStatus,
+    isLocationDisabled,
+    setIsLocationDisabled,
   } = useShopStore();
 
   const [shops, setShops] = useState<Shop[]>([]);
@@ -83,6 +85,7 @@ export default function ShopDiscoveryDashboard() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
+        setIsLocationDisabled(false);
         setCurrentLocation(coords);
         setPermissionStatus('granted');
         setLocating(false);
@@ -101,10 +104,17 @@ export default function ShopDiscoveryDashboard() {
       },
       { timeout: 10000, enableHighAccuracy: true }
     );
-  }, [loadShops, searchQuery, selectedRadius, setCurrentLocation, setPermissionStatus]);
+  }, [loadShops, searchQuery, selectedRadius, setCurrentLocation, setPermissionStatus, setIsLocationDisabled]);
+
+  // Enable location filter
+  const handleEnableLocation = () => {
+    setIsLocationDisabled(false);
+    handleRequestLocation();
+  };
 
   // Turn off location filter
   const handleTurnOffLocation = () => {
+    setIsLocationDisabled(true);
     setCurrentLocation(null);
     loadShops(searchQuery, undefined, undefined, selectedRadius);
   };
@@ -112,19 +122,28 @@ export default function ShopDiscoveryDashboard() {
   // Change radius
   const handleRadiusChange = (radius: number) => {
     setSelectedRadius(radius);
-    loadShops(searchQuery, currentLocation?.lat, currentLocation?.lng, radius);
+    if (!isLocationDisabled && currentLocation) {
+      loadShops(searchQuery, currentLocation.lat, currentLocation.lng, radius);
+    } else {
+      loadShops(searchQuery, undefined, undefined, radius);
+    }
   };
 
-  // Automatic location detection on load
+  // Automatic location detection on load (respects user turn off choice)
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    if (isLocationDisabled) {
+      loadShops('', undefined, undefined, selectedRadius);
+      return;
+    }
 
     if ('permissions' in navigator && navigator.permissions?.query) {
       navigator.permissions
         .query({ name: 'geolocation' })
         .then((permission) => {
           setPermissionStatus(permission.state as any);
-          if (permission.state === 'granted') {
+          if (permission.state === 'granted' && !isLocationDisabled) {
             handleRequestLocation();
           } else {
             loadShops('', undefined, undefined, selectedRadius);
@@ -136,7 +155,7 @@ export default function ShopDiscoveryDashboard() {
     } else {
       loadShops('', undefined, undefined, selectedRadius);
     }
-  }, []); // Run once on mount
+  }, [isLocationDisabled]); // Run on mount or when location disabled preference changes
 
   // Scroll to shops section if hash is present
   useEffect(() => {
@@ -242,29 +261,29 @@ export default function ShopDiscoveryDashboard() {
         {/* GPS Location Button & Reset */}
         <div className="lg:col-span-5 flex items-center gap-2">
           <button
-            onClick={handleRequestLocation}
+            onClick={currentLocation && !isLocationDisabled ? handleTurnOffLocation : handleEnableLocation}
             disabled={locating}
             className={`flex-1 py-3.5 px-4 rounded-2xl border text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-sm ${
-              currentLocation
+              currentLocation && !isLocationDisabled
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
                 : 'bg-card border-border hover:border-primary/50 text-foreground hover:bg-primary/5'
             }`}
           >
-            <Navigation className={`w-4 h-4 ${locating ? 'animate-spin' : currentLocation ? 'fill-current' : ''}`} />
+            <Navigation className={`w-4 h-4 ${locating ? 'animate-spin' : currentLocation && !isLocationDisabled ? 'fill-current' : ''}`} />
             <span>
               {locating
                 ? 'Locating...'
-                : currentLocation
+                : currentLocation && !isLocationDisabled
                 ? '📍 Location Enabled'
                 : '📍 Turn Location On'}
             </span>
           </button>
 
-          {currentLocation && (
+          {currentLocation && !isLocationDisabled && (
             <button
               onClick={handleTurnOffLocation}
               title="Turn off location filter"
-              className="py-3.5 px-3 rounded-2xl border border-border bg-card text-muted-foreground hover:text-destructive hover:border-destructive/30 text-xs font-semibold flex items-center gap-1 transition-all"
+              className="py-3.5 px-3 rounded-2xl border border-border bg-card text-muted-foreground hover:text-destructive hover:border-destructive/30 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
             >
               <XCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Turn Off</span>
@@ -274,7 +293,7 @@ export default function ShopDiscoveryDashboard() {
       </div>
 
       {/* Active Location Filter Banner & Radius Switcher */}
-      {currentLocation && (
+      {currentLocation && !isLocationDisabled && (
         <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-emerald-800 dark:text-emerald-200">
           <div className="flex items-center gap-2.5">
             <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
