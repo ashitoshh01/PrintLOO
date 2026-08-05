@@ -14,10 +14,12 @@ export class ShopsController {
   async getNearbyShops(
     @Query('lat') lat?: string,
     @Query('lng') lng?: string,
+    @Query('radius') radius?: string,
   ) {
     const latNum = lat !== undefined && lat !== null && lat !== '' ? parseFloat(lat) : undefined;
     const lngNum = lng !== undefined && lng !== null && lng !== '' ? parseFloat(lng) : undefined;
-    return this.shopsService.getNearbyShops(latNum, lngNum);
+    const radiusNum = radius !== undefined && radius !== null && radius !== '' ? parseFloat(radius) : 2;
+    return this.shopsService.getNearbyShops(latNum, lngNum, radiusNum);
   }
 
   @Get('search')
@@ -25,10 +27,12 @@ export class ShopsController {
     @Query('q') q: string = '',
     @Query('lat') lat?: string,
     @Query('lng') lng?: string,
+    @Query('radius') radius?: string,
   ) {
     const latNum = lat !== undefined && lat !== null && lat !== '' ? parseFloat(lat) : undefined;
     const lngNum = lng !== undefined && lng !== null && lng !== '' ? parseFloat(lng) : undefined;
-    return this.shopsService.searchShops(q, latNum, lngNum);
+    const radiusNum = radius !== undefined && radius !== null && radius !== '' ? parseFloat(radius) : 2;
+    return this.shopsService.searchShops(q, latNum, lngNum, radiusNum);
   }
 
   @Get(':id')

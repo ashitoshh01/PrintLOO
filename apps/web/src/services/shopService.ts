@@ -2,19 +2,21 @@ import api from './api';
 import { Shop } from '@/types/shop';
 
 export const shopService = {
-  getNearbyShops: (lat?: number, lng?: number) => {
+  getNearbyShops: (lat?: number, lng?: number, radius: number = 2) => {
     const params = new URLSearchParams();
     if (lat !== undefined && lat !== null) params.append('lat', lat.toString());
     if (lng !== undefined && lng !== null) params.append('lng', lng.toString());
+    if (radius !== undefined && radius !== null) params.append('radius', radius.toString());
     const queryStr = params.toString() ? `?${params.toString()}` : '';
     return api.get<any, { data: Shop[] }>(`/shops/nearby${queryStr}`);
   },
 
-  searchShops: (q: string, lat?: number, lng?: number) => {
+  searchShops: (q: string, lat?: number, lng?: number, radius: number = 2) => {
     const params = new URLSearchParams();
     if (q) params.append('q', q);
     if (lat !== undefined && lat !== null) params.append('lat', lat.toString());
     if (lng !== undefined && lng !== null) params.append('lng', lng.toString());
+    if (radius !== undefined && radius !== null) params.append('radius', radius.toString());
     const queryStr = params.toString() ? `?${params.toString()}` : '';
     return api.get<any, { data: Shop[] }>(`/shops/search${queryStr}`);
   },

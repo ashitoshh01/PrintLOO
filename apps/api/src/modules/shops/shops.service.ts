@@ -26,7 +26,7 @@ function formatDistance(distKm: number): string {
 export class ShopsService {
   constructor(private prisma: PrismaService) {}
 
-  async getNearbyShops(userLat?: number, userLng?: number) {
+  async getNearbyShops(userLat?: number, userLng?: number, radiusKm: number = 2) {
     const shops = await this.prisma.shop.findMany({
       where: { isActive: true },
       include: {
@@ -42,7 +42,7 @@ export class ShopsService {
       },
     });
 
-    const formattedShops = shops.map((shop) => {
+    let formattedShops = shops.map((shop) => {
       let distanceKm: number | null = null;
       let distanceFormatted: string | null = null;
 
@@ -67,6 +67,12 @@ export class ShopsService {
     });
 
     if (userLat !== undefined && userLng !== undefined && !isNaN(userLat) && !isNaN(userLng)) {
+      if (radiusKm && radiusKm > 0) {
+        formattedShops = formattedShops.filter(
+          (shop) => shop.distanceKm !== null && shop.distanceKm <= radiusKm
+        );
+      }
+
       formattedShops.sort((a, b) => {
         if (a.distanceKm === null) return 1;
         if (b.distanceKm === null) return -1;
@@ -77,10 +83,10 @@ export class ShopsService {
     return formattedShops;
   }
 
-  async searchShops(q: string, userLat?: number, userLng?: number) {
+  async searchShops(q: string, userLat?: number, userLng?: number, radiusKm: number = 2) {
     const query = q ? q.trim() : '';
     if (!query) {
-      return this.getNearbyShops(userLat, userLng);
+      return this.getNearbyShops(userLat, userLng, radiusKm);
     }
 
     const shops = await this.prisma.shop.findMany({
@@ -108,7 +114,7 @@ export class ShopsService {
       },
     });
 
-    const formattedShops = shops.map((shop) => {
+    let formattedShops = shops.map((shop) => {
       let distanceKm: number | null = null;
       let distanceFormatted: string | null = null;
 
@@ -133,6 +139,12 @@ export class ShopsService {
     });
 
     if (userLat !== undefined && userLng !== undefined && !isNaN(userLat) && !isNaN(userLng)) {
+      if (radiusKm && radiusKm > 0) {
+        formattedShops = formattedShops.filter(
+          (shop) => shop.distanceKm !== null && shop.distanceKm <= radiusKm
+        );
+      }
+
       formattedShops.sort((a, b) => {
         if (a.distanceKm === null) return 1;
         if (b.distanceKm === null) return -1;
