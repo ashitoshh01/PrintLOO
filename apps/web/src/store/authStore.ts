@@ -21,8 +21,8 @@ export const useAuthStore = create<AuthState>()(
       setToken: (token) => {
         set({ token });
         // Guard: document is not available during SSR — only set cookie in browser
-        if (typeof window !== 'undefined') {
-          document.cookie = `auth-token=${token}; path=/; max-age=900`; // 15 min
+        if (typeof window !== 'undefined' && token) {
+          document.cookie = `auth-token=${token}; path=/; max-age=604800`; // 7 days
         }
       },
       logout: () => {
@@ -33,6 +33,13 @@ export const useAuthStore = create<AuthState>()(
         }
       },
     }),
-    { name: 'auth-storage' }
+    {
+      name: 'auth-storage',
+      onRehydrateStorage: () => (state) => {
+        if (state?.token && typeof window !== 'undefined') {
+          document.cookie = `auth-token=${state.token}; path=/; max-age=604800`;
+        }
+      },
+    }
   )
 );

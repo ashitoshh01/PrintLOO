@@ -1,14 +1,28 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import AuthContainer from '@/components/auth/AuthContainer';
 import ShopDiscoveryDashboard from '@/components/shop/ShopDiscoveryDashboard';
 
 export default function Home() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, token } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background p-4 sm:p-6">
+        <div className="w-full max-w-md h-64 bg-card rounded-2xl border border-border animate-pulse" />
+      </div>
+    );
+  }
 
   // If user is not logged in, show authentication directly (no hero section)
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !token || !user) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background p-4 sm:p-6">
         <AuthContainer initialMode="login" />
