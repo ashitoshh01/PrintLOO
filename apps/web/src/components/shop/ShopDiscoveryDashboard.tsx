@@ -138,6 +138,18 @@ export default function ShopDiscoveryDashboard() {
     }
   }, []); // Run once on mount
 
+  // Scroll to shops section if hash is present
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#shops-section') {
+      const el = document.getElementById('shops-section');
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+    }
+  }, []);
+
   // Debounced Search Handler
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -206,7 +218,7 @@ export default function ShopDiscoveryDashboard() {
       </div>
 
       {/* Control Panel: Search & Location */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+      <div id="shops-section" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center scroll-mt-24">
         {/* Search Bar */}
         <div className="lg:col-span-7 relative">
           <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />

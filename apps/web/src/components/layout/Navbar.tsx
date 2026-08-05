@@ -19,7 +19,14 @@ export function Navbar() {
   const handleChangeShop = (e: React.MouseEvent) => {
     e.preventDefault();
     clearSelectedShop();
-    router.push('/');
+    if (typeof window !== 'undefined' && window.location.pathname === '/') {
+      const el = document.getElementById('shops-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+    router.push('/#shops-section');
   };
 
   return (
