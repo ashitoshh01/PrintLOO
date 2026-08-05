@@ -9,10 +9,16 @@ import { Infinity, Store, LogOut, User as UserIcon } from 'lucide-react';
 export function Navbar() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { selectedShop } = useShopStore();
+  const { selectedShop, clearSelectedShop } = useShopStore();
 
   const handleLogout = () => {
     logout();
+    router.push('/');
+  };
+
+  const handleChangeShop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    clearSelectedShop();
     router.push('/');
   };
 
@@ -34,9 +40,12 @@ export function Navbar() {
             <Store className="w-3.5 h-3.5 text-primary" />
             <span className="text-muted-foreground">Shop:</span>
             <strong className="text-foreground font-semibold truncate max-w-[150px]">{selectedShop.name}</strong>
-            <Link href="/" className="text-primary hover:underline font-semibold ml-1">
+            <button
+              onClick={handleChangeShop}
+              className="text-primary hover:underline font-semibold ml-1 cursor-pointer focus:outline-none"
+            >
               Change
-            </Link>
+            </button>
           </div>
         )}
 
