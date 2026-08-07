@@ -312,7 +312,7 @@ export default function MyOrdersPage() {
 
                       {['QUEUED', 'PRINTING', 'PROCESSING'].includes(order.status) && (
                         <Link 
-                          href={`/queue?orderId=${order.id}&token=${order.tokenNumber}`}
+                          href={`/queue?orderId=${order.id}`}
                           className="text-xs font-semibold bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/20 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
                         >
                           Queue View <ArrowRight className="w-3 h-3" />

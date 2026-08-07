@@ -83,9 +83,25 @@ export class PaymentsService {
       data: { status: 'QUEUED' },
     });
 
-    await this.queueService.addToQueue(payment.orderId, payment.order.shopId);
+    const queuePosition = await this.queueService.addToQueue(payment.orderId, payment.order.shopId);
 
-    return { success: true, orderId: payment.orderId };
+    // Fetch enriched order data for the response
+    const order = await this.prisma.printOrder.findUnique({
+      where: { id: payment.orderId },
+      include: {
+        shop: { select: { id: true, name: true, address: true } },
+      },
+    });
+
+    return {
+      success: true,
+      orderId: payment.orderId,
+      tokenNumber: order?.tokenNumber,
+      shopId: order?.shopId,
+      shopName: order?.shop?.name,
+      queuePosition,
+      totalAmount: order ? Number(order.totalAmount) : 0,
+    };
   }
 
   async handleWebhook(body: any, signature: string) {

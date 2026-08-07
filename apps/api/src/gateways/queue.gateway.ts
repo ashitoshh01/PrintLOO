@@ -33,4 +33,17 @@ export class QueueGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitQueueUpdate(shopId: string, data: object) {
     this.server.to(`shop:${shopId}`).emit('queue:updated', data);
   }
+
+  /**
+   * Emit a specific "now serving" event to all clients in a shop room.
+   * This tells every customer waiting which token is currently being served.
+   */
+  emitNowServing(shopId: string, data: {
+    nowServingToken: number | null;
+    nowServingOrderId: string | null;
+    totalInQueue: number;
+    estimatedWaitTime: number;
+  }) {
+    this.server.to(`shop:${shopId}`).emit('queue:now-serving', data);
+  }
 }

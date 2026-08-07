@@ -123,7 +123,52 @@ export class OrdersService {
       data: { status },
     });
 
+    // Sync the queueJob status
+    try {
+      if (status === 'COMPLETED' || status === 'FAILED') {
+        // Remove from queue when done
+        await this.prisma.queueJob.deleteMany({ where: { orderId } });
+      } else if (status === 'PROCESSING' || status === 'PRINTING') {
+        await this.prisma.queueJob.updateMany({
+          where: { orderId },
+          data: { status: 'PROCESSING' },
+        });
+      }
+    } catch (e) {
+      // Queue job may not exist, that's ok
+    }
+
+    // Emit order-level update
     this.queueGateway.emitOrderUpdate(orderId, { orderId, status, shopId: order.shopId });
+
+    // Emit shop-level queue update so all waiting customers see the change
+    const pendingJobs = await this.prisma.queueJob.count({
+      where: { shopId: order.shopId, status: 'WAITING' },
+    });
+    const currentlyServing = await this.prisma.printOrder.findFirst({
+      where: {
+        shopId: order.shopId,
+        status: { in: ['PROCESSING', 'PRINTING'] },
+      },
+      orderBy: { tokenNumber: 'asc' },
+      select: { tokenNumber: true, id: true },
+    });
+
+    const queueState = {
+      pendingJobs,
+      estimatedWaitTime: pendingJobs * 3,
+      activeShop: order.shopId,
+      nowServingToken: currentlyServing?.tokenNumber || null,
+      nowServingOrderId: currentlyServing?.id || null,
+    };
+
+    this.queueGateway.emitQueueUpdate(order.shopId, queueState);
+    this.queueGateway.emitNowServing(order.shopId, {
+      nowServingToken: queueState.nowServingToken,
+      nowServingOrderId: queueState.nowServingOrderId,
+      totalInQueue: pendingJobs,
+      estimatedWaitTime: queueState.estimatedWaitTime,
+    });
 
     return { ...updatedOrder, totalAmount: Number(updatedOrder.totalAmount) };
   }

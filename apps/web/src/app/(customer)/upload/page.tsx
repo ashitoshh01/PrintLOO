@@ -111,7 +111,7 @@ function UploadContent() {
             razorpaySignature: response.razorpay_signature,
             orderId: order.id,
           });
-          router.push(`/queue?orderId=${order.id}&token=${order.tokenNumber}`);
+          router.push(`/queue?orderId=${order.id}&success=true`);
         },
         prefill: { name: user?.name, email: user?.email },
         theme: { color: '#3b82f6' },
