@@ -1,50 +1,82 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import * as fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
 import * as path from 'path';
 import * as crypto from 'crypto';
 const pdfParse = require('pdf-parse');
 
 @Injectable()
 export class UploadsService {
+  constructor() {
+    if (process.env.CLOUDINARY_URL) {
+      cloudinary.config({
+        cloudinary_url: process.env.CLOUDINARY_URL,
+      });
+    }
+  }
+
+  private async uploadToCloudinary(
+    buffer: Buffer,
+    shopId: string,
+    ext: string,
+  ): Promise<{ publicId: string; secureUrl: string }> {
+    const uuid = crypto.randomUUID();
+    const timestamp = Date.now();
+    const isPdf = ext === '.pdf';
+    const publicId = isPdf ? `${uuid}-${timestamp}${ext}` : `${uuid}-${timestamp}`;
+    const resourceType = isPdf ? 'raw' : 'auto';
+
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: `printloo/${shopId}`,
+          public_id: publicId,
+          resource_type: resourceType,
+        },
+        (error, result) => {
+          if (error || !result) {
+            return reject(error || new Error('Cloudinary upload failed'));
+          }
+          resolve({
+            publicId: result.public_id,
+            secureUrl: result.secure_url,
+          });
+        },
+      );
+      uploadStream.end(buffer);
+    });
+  }
+
   async uploadFile(file: Express.Multer.File, userId: string, shopId: string) {
     if (!file) throw new BadRequestException('File is required');
     const ext = path.extname(file.originalname).toLowerCase();
     const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png'];
     if (!allowedExts.includes(ext)) {
-      throw new BadRequestException('Invalid file type');
+      throw new BadRequestException('Invalid file type. Allowed: PDF, JPG, JPEG, PNG');
     }
 
-    const uuid = crypto.randomUUID();
-    const timestamp = Date.now();
-    const newFileName = `${uuid}-${timestamp}${ext}`;
-    
-    const uploadDir = process.env.UPLOAD_DIR || './uploads';
-    const shopDir = path.join(uploadDir, shopId);
-    
-    if (!fs.existsSync(shopDir)) {
-      fs.mkdirSync(shopDir, { recursive: true });
-    }
-    
-    const filePath = path.join(shopDir, newFileName);
-    fs.writeFileSync(filePath, file.buffer);
-    
     let pageCount = 1;
     if (ext === '.pdf') {
       try {
         const data = await pdfParse(file.buffer);
-        pageCount = data.numpages;
+        pageCount = data.numpages || 1;
       } catch (err) {
         throw new BadRequestException('Failed to parse PDF file');
       }
     }
-    
-    return {
-      fileId: newFileName,
-      fileUrl: `http://localhost:3001/files/${shopId}/${newFileName}`,
-      pageCount,
-      fileSize: file.size,
-      fileName: file.originalname,
-    };
+
+    try {
+      const cloudinaryResult = await this.uploadToCloudinary(file.buffer, shopId, ext);
+
+      return {
+        fileId: cloudinaryResult.publicId,
+        fileUrl: cloudinaryResult.secureUrl,
+        pageCount,
+        fileSize: file.size,
+        fileName: file.originalname,
+      };
+    } catch (err: any) {
+      throw new BadRequestException(err?.message || 'Failed to upload file to Cloudinary');
+    }
   }
 
   async uploadFiles(files: Express.Multer.File[], userId: string, shopId: string) {
@@ -77,12 +109,10 @@ export class UploadsService {
   }
 
   async getPreviewUrl(fileId: string, shopId: string, userId: string) {
-    // Basic verification - checking if file exists
-    const uploadDir = process.env.UPLOAD_DIR || './uploads';
-    const filePath = path.join(uploadDir, shopId, fileId);
-    if (!fs.existsSync(filePath)) {
-      throw new BadRequestException('File not found');
+    if (fileId.startsWith('http')) {
+      return { url: fileId };
     }
-    return { url: `${process.env.FRONTEND_URL}/files/${shopId}/${fileId}` };
+    return { url: `https://res.cloudinary.com/depohq5yg/image/upload/${fileId}` };
   }
 }
+

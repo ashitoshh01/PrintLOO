@@ -10,7 +10,7 @@ build/
 node_modules/
 
 # --- Uploaded user files (runtime data, not source code) ---
-uploads/
+/uploads/
 
 # --- TypeScript ---
 *.tsbuildinfo
