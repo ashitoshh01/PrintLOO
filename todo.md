@@ -7,7 +7,7 @@
 - [x] **1. Database Migration to Neon DB (Cloud PostgreSQL)**
 - [x] **2. Cloudinary Integration for Document & Media Uploads**
 - [x] **3. Production-Ready Razorpay Integration**
-- [ ] **4. Production Deployment & Environment Verification**
+- [x] **4. Production Deployment & Environment Verification**
 
 ---
 
@@ -76,7 +76,8 @@ Finalize the Razorpay payment gateway integration for seamless online payments a
 
 ## 🚀 4. Deployment & Infrastructure
 
-- [ ] Deploy Next.js Frontend (`apps/web`) to Vercel / Netlify.
-- [ ] Deploy NestJS API (`apps/api`) to Render / Railway / DigitalOcean.
-- [ ] Provision Redis on Upstash / Render for background print queues.
-- [ ] End-to-end audit: Location shop discovery ➔ Upload file to Cloudinary ➔ Razorpay checkout ➔ Live print queue.
+- [x] Deploy Next.js Frontend (`apps/web`) to Vercel.
+- [x] Deploy NestJS API (`apps/api`) to Render.
+- [x] Provision Redis on Upstash / Render for background print queues.
+- [x] End-to-end audit: Location shop discovery ➔ Upload file to Cloudinary ➔ Razorpay checkout ➔ Live print queue.
+
