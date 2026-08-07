@@ -44,7 +44,7 @@ export class PaymentsService {
 
     return {
       razorpayOrderId: rzpOrder.id,
-      amount: order.totalAmount,
+      amount: rzpOrder.amount,
       currency: 'INR',
       orderId: order.id,
     };
