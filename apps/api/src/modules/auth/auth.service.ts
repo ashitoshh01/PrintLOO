@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -7,6 +7,7 @@ import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private otpStore = new Map<string, { otp: string; expiresAt: number }>();
 
   constructor(
@@ -26,11 +27,12 @@ export class AuthService {
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
     this.otpStore.set(email.toLowerCase(), { otp, expiresAt });
 
-    console.log(`[OTP Sent] Email: ${email}, OTP: ${otp}`);
+    this.logger.debug(`OTP sent to ${email}`);
     return {
       success: true,
       message: `OTP sent to ${email}`,
-      devOtp: otp,
+      // Only expose OTP in non-production for testing convenience
+      ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
     };
   }
 
@@ -57,7 +59,7 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existingUser) throw new BadRequestException('Email already in use');
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const passwordHash = await bcrypt.hash(dto.password, 10);
 
     let shopId: string | null = null;
     if (dto.role === SignupRole.OPERATOR) {
@@ -84,7 +86,7 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.shopId);
     return {
       user: { id: user.id, name: user.name, email: user.email, role: user.role, shopId: user.shopId },
       ...tokens,
@@ -98,7 +100,7 @@ export class AuthService {
     const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.shopId);
     return { user: { id: user.id, name: user.name, email: user.email, role: user.role, shopId: user.shopId }, ...tokens };
   }
 
@@ -122,10 +124,13 @@ export class AuthService {
     return { success: true };
   }
 
-  private async generateTokens(userId: string, email: string, role: string) {
-    // Look up shopId so it can be embedded in the JWT
-    const userRecord = await this.prisma.user.findUnique({ where: { id: userId }, select: { shopId: true } });
-    const payload = { sub: userId, email, role, shopId: userRecord?.shopId || null };
+  private async generateTokens(userId: string, email: string, role: string, shopId: string | null = null) {
+    // Clean up expired refresh tokens for this user (prevents table bloat)
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId, expiresAt: { lt: new Date() } },
+    });
+
+    const payload = { sub: userId, email, role, shopId: shopId || null };
     const token = this.jwtService.sign(payload, { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any });
     const refreshTokenString = this.jwtService.sign({ sub: userId }, { secret: process.env.JWT_REFRESH_SECRET || 'refresh', expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any });
 

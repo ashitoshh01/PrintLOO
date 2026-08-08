@@ -15,8 +15,10 @@ export default function Home() {
 
   if (!mounted) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background p-4 sm:p-6">
-        <div className="w-full max-w-md h-64 bg-card rounded-2xl border border-border animate-pulse" />
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-start bg-background pt-12 p-4 sm:p-6 space-y-4">
+        {/* Neutral header skeleton */}
+        <div className="w-full max-w-5xl h-10 bg-muted/30 rounded-xl animate-pulse mx-auto" />
+        <div className="w-full max-w-5xl h-64 bg-card rounded-2xl border border-border animate-pulse mx-auto shadow-sm" />
       </div>
     );
   }

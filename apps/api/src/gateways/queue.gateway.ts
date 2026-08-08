@@ -2,18 +2,20 @@ import {
   WebSocketGateway, WebSocketServer,
   SubscribeMessage, OnGatewayConnection, OnGatewayDisconnect
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({ cors: { origin: process.env.FRONTEND_URL || '*' }, namespace: '/queue' })
 export class QueueGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(QueueGateway.name);
   @WebSocketServer() server: Server;
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    this.logger.debug(`Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.debug(`Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('join:order')

@@ -1,4 +1,5 @@
 import { Process, Processor } from '@nestjs/bull';
+import { Logger } from '@nestjs/common';
 import type { Job } from 'bull';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { QueueGateway } from '../../gateways/queue.gateway';
@@ -6,6 +7,8 @@ import { QueueService } from './queue.service';
 
 @Processor('print-queue')
 export class QueueProcessor {
+  private readonly logger = new Logger(QueueProcessor.name);
+
   constructor(
     private prisma: PrismaService,
     private queueGateway: QueueGateway,
@@ -14,7 +17,7 @@ export class QueueProcessor {
 
   @Process('process-order')
   async handlePrintJob(job: Job<{ orderId: string; shopId: string }>) {
-    console.log(`Processing job for order: ${job.data.orderId}`);
+    this.logger.log(`Processing job for order: ${job.data.orderId}`);
     
     // Update queue job status
     await this.prisma.queueJob.update({

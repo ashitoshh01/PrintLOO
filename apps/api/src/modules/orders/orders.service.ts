@@ -112,10 +112,11 @@ export class OrdersService {
   }
 
   async updateOrderStatus(orderId: string, status: OrderStatus, operatorId: string) {
-    const order = await this.prisma.printOrder.findUnique({ where: { id: orderId } });
+    const [order, user] = await Promise.all([
+      this.prisma.printOrder.findUnique({ where: { id: orderId } }),
+      this.prisma.user.findUnique({ where: { id: operatorId } }),
+    ]);
     if (!order) throw new NotFoundException('Order not found');
-
-    const user = await this.prisma.user.findUnique({ where: { id: operatorId } });
     if (user?.shopId !== order.shopId) throw new ForbiddenException('Access denied');
 
     const updatedOrder = await this.prisma.printOrder.update({

@@ -135,6 +135,8 @@ model PrintOrder {
   @@index([shopId])
   @@index([userId])
   @@index([status])
+  @@index([shopId, createdAt])
+  @@index([shopId, status, createdAt])
 }
 
 model Payment {
@@ -167,4 +169,5 @@ model QueueJob {
 
   @@index([shopId])
   @@index([orderId])
+  @@index([shopId, status])
 }

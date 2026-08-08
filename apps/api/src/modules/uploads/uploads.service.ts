@@ -88,8 +88,12 @@ export class UploadsService {
     let totalPageCount = 0;
     let totalSize = 0;
 
-    for (const file of files) {
-      const result = await this.uploadFile(file, userId, shopId);
+    // Upload all files in parallel for maximum throughput
+    const results = await Promise.all(
+      files.map(file => this.uploadFile(file, userId, shopId))
+    );
+
+    for (const result of results) {
       uploadedFiles.push(result);
       totalPageCount += result.pageCount;
       totalSize += result.fileSize;

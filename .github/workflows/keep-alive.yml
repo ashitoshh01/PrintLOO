@@ -1,0 +1,22 @@
+# ─────────────────────────────────────────────────────────────
+# Keep-Alive Cron — Prevents Render Free-Tier Cold Starts
+# Pings the /api/health endpoint every 14 minutes so the
+# server never spins down.
+# ─────────────────────────────────────────────────────────────
+name: Keep API Alive
+
+on:
+  schedule:
+    # Every 14 minutes — Render sleeps after 15 min of inactivity
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API Health Endpoint
+        run: |
+          echo "Pinging PrintLOO API to prevent cold start..."
+          curl -sf --max-time 60 "${{ secrets.API_HEALTH_URL }}" || echo "Ping failed (server may be waking up)"
+          echo "Done."

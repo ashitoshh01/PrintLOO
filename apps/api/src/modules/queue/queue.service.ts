@@ -64,35 +64,35 @@ export class QueueService {
 
     const shopId = order.shopId;
 
-    // Get the currently processing/printing order for this shop
-    const currentlyServing = await this.prisma.printOrder.findFirst({
-      where: {
-        shopId,
-        status: { in: ['PROCESSING', 'PRINTING'] },
-      },
-      orderBy: { tokenNumber: 'asc' },
-      select: { tokenNumber: true, id: true },
-    });
-
-    // Count how many orders are ahead of this one in the queue
-    let positionAhead = 0;
-    if (order.queueJob && order.status === 'QUEUED') {
-      positionAhead = await this.prisma.queueJob.count({
+    // Run all independent queries in parallel for better latency
+    const [currentlyServing, positionAhead, totalInQueue] = await Promise.all([
+      // Get the currently processing/printing order for this shop
+      this.prisma.printOrder.findFirst({
+        where: {
+          shopId,
+          status: { in: ['PROCESSING', 'PRINTING'] },
+        },
+        orderBy: { tokenNumber: 'asc' },
+        select: { tokenNumber: true, id: true },
+      }),
+      // Count how many orders are ahead of this one in the queue
+      (order.queueJob && order.status === 'QUEUED')
+        ? this.prisma.queueJob.count({
+            where: {
+              shopId,
+              status: { in: ['WAITING', 'PROCESSING'] },
+              position: { lt: order.queueJob.position },
+            },
+          })
+        : Promise.resolve(0),
+      // Total pending in queue
+      this.prisma.queueJob.count({
         where: {
           shopId,
           status: { in: ['WAITING', 'PROCESSING'] },
-          position: { lt: order.queueJob.position },
         },
-      });
-    }
-
-    // Total pending in queue
-    const totalInQueue = await this.prisma.queueJob.count({
-      where: {
-        shopId,
-        status: { in: ['WAITING', 'PROCESSING'] },
-      },
-    });
+      }),
+    ]);
 
     // Estimated wait: 3 minutes per job ahead
     const estimatedMinutes = positionAhead * 3;
