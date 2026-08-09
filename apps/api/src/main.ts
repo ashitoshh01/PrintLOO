@@ -11,18 +11,39 @@ async function bootstrap() {
   app.setGlobalPrefix('api', {
     exclude: [{ path: '/', method: RequestMethod.GET }],
   });
-  const allowedOrigins = ['http://localhost:3000', 'https://print-loo-web.vercel.app'];
-  if (process.env.FRONTEND_URL) {
-    allowedOrigins.push(process.env.FRONTEND_URL);
-  }
+  const defaultOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://print-loo-web.vercel.app',
+    'https://printloo-web.vercel.app',
+    'https://printloo.vercel.app',
+  ];
+
+  const envOrigins = (process.env.FRONTEND_URL || process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+  const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, or server-to-server)
-      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-        callback(null, true);
-      } else {
-        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      if (!origin) {
+        return callback(null, true);
       }
+
+      const cleanOrigin = origin.replace(/\/$/, '');
+
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        cleanOrigin.endsWith('.vercel.app') ||
+        process.env.NODE_ENV !== 'production'
+      ) {
+        return callback(null, true);
+      }
+
+      callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
