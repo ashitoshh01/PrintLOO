@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapPin, Crosshair, Loader2 } from 'lucide-react';
 
 interface LocationPickerProps {
@@ -20,7 +20,6 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
     );
     const data = await res.json();
     if (data.display_name) {
-      // Trim to a reasonable length
       const parts = data.display_name.split(',').slice(0, 4);
       return parts.join(',').trim();
     }
@@ -40,112 +39,141 @@ export default function LocationPicker({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const isInitializingRef = useRef(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     latitude && longitude ? { lat: latitude, lng: longitude } : null
   );
 
-  // Dynamically import Leaflet (SSR-safe)
-  const initMap = useCallback(async () => {
-    const container = mapContainerRef.current;
-    if (!container) return;
+  useEffect(() => {
+    let isMounted = true;
 
-    // Guard: if Leaflet already initialized this container, skip
-    if ((container as any)._leaflet_id) return;
-    if (mapInstanceRef.current) return;
+    async function setupMap() {
+      const container = mapContainerRef.current;
+      if (!container || mapInstanceRef.current || isInitializingRef.current) return;
 
-    const L = (await import('leaflet')).default;
-    await import('leaflet/dist/leaflet.css');
+      isInitializingRef.current = true;
 
-    // Fix default marker icons
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-    });
+      try {
+        const L = (await import('leaflet')).default;
+        await import('leaflet/dist/leaflet.css');
 
-    const defaultCenter: [number, number] = coords
-      ? [coords.lat, coords.lng]
-      : [18.5204, 73.8567]; // Pune default
-    const defaultZoom = coords ? 16 : 13;
+        if (!isMounted || !mapContainerRef.current) {
+          isInitializingRef.current = false;
+          return;
+        }
 
-    const map = L.map(container, {
-      center: defaultCenter,
-      zoom: defaultZoom,
-      zoomControl: true,
-      attributionControl: !compact,
-    });
+        // Clean up any stale leaflet ID on container if present
+        if ((container as any)._leaflet_id) {
+          (container as any)._leaflet_id = null;
+        }
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(map);
+        // Fix default marker icons
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        });
 
-    // Custom marker icon with brand color
-    const customIcon = L.divIcon({
-      html: `<div style="
-        background: #3b82f6;
-        width: 32px;
-        height: 32px;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        border: 3px solid white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      "><div style="
-        width: 8px;
-        height: 8px;
-        background: white;
-        border-radius: 50%;
-        transform: rotate(45deg);
-      "></div></div>`,
-      className: '',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-    });
+        const defaultCenter: [number, number] = coords
+          ? [coords.lat, coords.lng]
+          : [18.5204, 73.8567]; // Pune default
+        const defaultZoom = coords ? 16 : 13;
 
-    // Place marker if coords exist
-    if (coords) {
-      markerRef.current = L.marker([coords.lat, coords.lng], { icon: customIcon }).addTo(map);
+        let map: any;
+        try {
+          map = L.map(container, {
+            center: defaultCenter,
+            zoom: defaultZoom,
+            zoomControl: true,
+            attributionControl: !compact,
+          });
+        } catch {
+          (container as any)._leaflet_id = null;
+          container.innerHTML = '';
+          map = L.map(container, {
+            center: defaultCenter,
+            zoom: defaultZoom,
+            zoomControl: true,
+            attributionControl: !compact,
+          });
+        }
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+        }).addTo(map);
+
+        const customIcon = L.divIcon({
+          html: `<div style="
+            background: #3b82f6;
+            width: 32px;
+            height: 32px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          "><div style="
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            transform: rotate(45deg);
+          "></div></div>`,
+          className: '',
+          iconSize: [32, 32],
+          iconAnchor: [16, 32],
+        });
+
+        if (coords) {
+          markerRef.current = L.marker([coords.lat, coords.lng], { icon: customIcon }).addTo(map);
+        }
+
+        map.on('click', async (e: any) => {
+          const { lat, lng } = e.latlng;
+          if (markerRef.current) {
+            markerRef.current.setLatLng([lat, lng]);
+          } else {
+            markerRef.current = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+          }
+          setCoords({ lat, lng });
+          const address = await reverseGeocode(lat, lng);
+          onLocationChange(lat, lng, address);
+        });
+
+        mapInstanceRef.current = map;
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.invalidateSize();
+          }
+        }, 150);
+      } catch (err) {
+        console.error('Error initializing map:', err);
+      } finally {
+        isInitializingRef.current = false;
+      }
     }
 
-    // Click to place marker
-    map.on('click', async (e: any) => {
-      const { lat, lng } = e.latlng;
+    setupMap();
 
-      if (markerRef.current) {
-        markerRef.current.setLatLng([lat, lng]);
-      } else {
-        markerRef.current = L.marker([lat, lng], { icon: customIcon }).addTo(map);
-      }
-
-      setCoords({ lat, lng });
-
-      // Reverse geocode
-      const address = await reverseGeocode(lat, lng);
-      onLocationChange(lat, lng, address);
-    });
-
-    mapInstanceRef.current = map;
-
-    // Force recalculate size after render
-    setTimeout(() => map.invalidateSize(), 100);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    initMap();
     return () => {
+      isMounted = false;
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.remove();
+        } catch {}
         mapInstanceRef.current = null;
         markerRef.current = null;
       }
+      if (mapContainerRef.current) {
+        (mapContainerRef.current as any)._leaflet_id = null;
+      }
     };
-  }, [initMap]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Detect user's current location
   const handleDetectLocation = async () => {
