@@ -4,9 +4,33 @@
 @import "leaflet/dist/leaflet.css";
 
 .leaflet-container {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   border-radius: inherit;
+  z-index: 0;
+}
+
+/* Tailwind preflight sets img { max-width: 100% } which breaks Leaflet tiles */
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-container .leaflet-control-zoom a,
+.leaflet-container .leaflet-control-attribution {
+  font-size: 12px;
+}
+
+.leaflet-container img {
+  max-width: none !important;
+}
+
+.leaflet-tile-pane {
+  z-index: 1;
+}
+
+.leaflet-pane {
+  z-index: 1;
 }
 
 @custom-variant dark (&:is(.dark *));
