@@ -3,6 +3,7 @@ import { DM_Sans, Syne } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { Navbar } from '@/components/layout/Navbar';
+import { PWAInstallBanner } from '@/components/pwa/PWAInstallBanner';
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -17,6 +18,12 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "PrintLOO - Digital Print Queue",
   description: "Digitize your print queue workflow with PrintLOO",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -32,6 +39,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <Navbar />
         <main className="flex-1">{children}</main>
+        <PWAInstallBanner />
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       </body>
     </html>
