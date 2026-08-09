@@ -2,11 +2,14 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
 import { Infinity, ShieldCheck, Mail, KeyRound, User as UserIcon, Store, ArrowRight, CheckCircle2 } from 'lucide-react';
 import logoImg from '../../../public/logo.png';
+
+const LocationPicker = dynamic(() => import('@/components/map/LocationPicker'), { ssr: false });
 
 interface AuthContainerProps {
   initialMode?: 'login' | 'signup';
@@ -37,6 +40,8 @@ export default function AuthContainer({ initialMode = 'login', onSuccess }: Auth
   const [password, setPassword] = useState('');
   const [shopName, setShopName] = useState('');
   const [shopLocation, setShopLocation] = useState('');
+  const [shopLat, setShopLat] = useState<number | null>(null);
+  const [shopLng, setShopLng] = useState<number | null>(null);
   
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState('');
@@ -136,6 +141,8 @@ export default function AuthContainer({ initialMode = 'login', onSuccess }: Auth
         role,
         shopName: role === 'OPERATOR' ? shopName : undefined,
         shopLocation: role === 'OPERATOR' ? shopLocation : undefined,
+        shopLatitude: role === 'OPERATOR' && shopLat ? shopLat : undefined,
+        shopLongitude: role === 'OPERATOR' && shopLng ? shopLng : undefined,
       });
 
       const { user, token, refreshToken } = signupRes.data;
@@ -444,6 +451,16 @@ export default function AuthContainer({ initialMode = 'login', onSuccess }: Auth
                         required
                       />
                     </div>
+                    <LocationPicker
+                      latitude={shopLat}
+                      longitude={shopLng}
+                      compact
+                      onLocationChange={(lat, lng, address) => {
+                        setShopLat(lat);
+                        setShopLng(lng);
+                        if (address && !shopLocation) setShopLocation(address);
+                      }}
+                    />
                   </>
                 )}
 

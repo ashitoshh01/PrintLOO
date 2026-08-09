@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuthStore } from '@/store/authStore';
 import { shopService } from '@/services/shopService';
+
+const LocationPicker = dynamic(() => import('@/components/map/LocationPicker'), { ssr: false });
 
 type Tab = 'general' | 'pricing' | 'printers';
 
@@ -14,6 +17,8 @@ function GeneralSettings({ shop, onSave, saving }: any) {
     closeTime: shop.settings?.operatingHours?.close || '21:00',
     queueCapacity: shop.settings?.queueCapacity || 50,
     autoAcceptOrders: shop.settings?.autoAcceptOrders ?? true,
+    latitude: shop.latitude ?? null,
+    longitude: shop.longitude ?? null,
   });
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -24,6 +29,8 @@ function GeneralSettings({ shop, onSave, saving }: any) {
       name: form.name,
       location: form.location,
       contact: form.contact,
+      latitude: form.latitude,
+      longitude: form.longitude,
       settings: {
         operatingHours: { open: form.openTime, close: form.closeTime, days: activeDays },
         queueCapacity: Number(form.queueCapacity),
@@ -51,6 +58,21 @@ function GeneralSettings({ shop, onSave, saving }: any) {
             />
           </div>
         ))}
+      </div>
+
+      <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+        <h3 className="text-sm font-medium">Shop Location on Map</h3>
+        <p className="text-xs text-muted-foreground">Pin your exact shop location so customers can find you nearby. Click on the map or use &quot;Use My Location&quot;.</p>
+        <LocationPicker
+          latitude={form.latitude}
+          longitude={form.longitude}
+          onLocationChange={(lat, lng, address) => {
+            setForm(prev => ({ ...prev, latitude: lat, longitude: lng }));
+            if (address && !form.location) {
+              setForm(prev => ({ ...prev, location: address }));
+            }
+          }}
+        />
       </div>
 
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">

@@ -70,6 +70,8 @@ export class AuthService {
         data: {
           name: dto.shopName,
           location: dto.shopLocation,
+          latitude: dto.shopLatitude ?? null,
+          longitude: dto.shopLongitude ?? null,
           contact: '', // placeholder, can be updated later
         },
       });

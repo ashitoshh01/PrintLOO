@@ -11,7 +11,7 @@ export const authService = {
   login: (email: string, password: string) =>
     api.post<{ user: User; token: string; refreshToken: string }>('/auth/login', { email, password }),
 
-  signup: (data: { name: string; email: string; password: string; role: string; shopName?: string; shopLocation?: string }) =>
+  signup: (data: { name: string; email: string; password: string; role: string; shopName?: string; shopLocation?: string; shopLatitude?: number; shopLongitude?: number }) =>
     api.post<{ user: User; token: string; refreshToken?: string }>('/auth/signup', data),
 
   refreshToken: (refreshToken: string) =>
