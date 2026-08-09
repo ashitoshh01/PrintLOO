@@ -1,10 +1,12 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
 import { Infinity, ShieldCheck, Mail, KeyRound, User as UserIcon, Store, ArrowRight, CheckCircle2 } from 'lucide-react';
+import logoImg from '../../../public/logo.png';
 
 interface AuthContainerProps {
   initialMode?: 'login' | 'signup';
@@ -159,13 +161,10 @@ export default function AuthContainer({ initialMode = 'login', onSuccess }: Auth
     <div className="w-full max-w-md mx-auto">
       {/* Brand Header */}
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-3">
-          <div className="flex items-center text-primary font-bold tracking-tighter">
-            <span className="text-3xl leading-none">L</span>
-            <Infinity className="w-9 h-9 -ml-0.5 stroke-[3]" />
-          </div>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Welcome to PrintLOO</h1>
+        <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2 flex-wrap">
+          <span>Welcome to</span>
+          <Image src={logoImg} alt="PrintLOO" className="h-8 sm:h-9 w-auto object-contain inline-block align-middle" priority />
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
           {mode === 'login' ? 'Sign in to access print shops near you' : 'Create an account to get started'}
         </p>

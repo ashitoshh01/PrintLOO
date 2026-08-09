@@ -33,12 +33,12 @@ export function Navbar() {
     <nav className="w-full border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-1.5 group">
+        <Link href="/" className="flex items-center group">
+          <span className="font-heading font-bold text-2xl tracking-tight text-foreground">Print</span>
           <div className="flex items-center text-primary font-bold tracking-tighter">
             <span className="text-2xl leading-none">L</span>
             <Infinity className="w-8 h-8 -ml-0.5 stroke-[3] group-hover:rotate-12 transition-transform" />
           </div>
-          <span className="font-heading font-bold text-xl tracking-tight ml-1 text-foreground">PrintLOO</span>
         </Link>
 
         {/* Selected Shop Badge for Customers */}
