@@ -39,11 +39,38 @@ export default function LocationPicker({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const leafletModuleRef = useRef<any>(null);
   const isInitializingRef = useRef(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     latitude && longitude ? { lat: latitude, lng: longitude } : null
   );
+
+  const createCustomIcon = (L: any) => {
+    return L.divIcon({
+      html: `<div style="
+        background: #3b82f6;
+        width: 32px;
+        height: 32px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "><div style="
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        transform: rotate(45deg);
+      "></div></div>`,
+      className: '',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+    });
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -56,7 +83,7 @@ export default function LocationPicker({
 
       try {
         const L = (await import('leaflet')).default;
-        await import('leaflet/dist/leaflet.css');
+        leafletModuleRef.current = L;
 
         if (!isMounted || !mapContainerRef.current) {
           isInitializingRef.current = false;
@@ -76,10 +103,10 @@ export default function LocationPicker({
           shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
         });
 
-        const defaultCenter: [number, number] = coords
-          ? [coords.lat, coords.lng]
-          : [18.5204, 73.8567]; // Pune default
-        const defaultZoom = coords ? 16 : 13;
+        const initialLat = latitude ?? coords?.lat ?? 18.5204;
+        const initialLng = longitude ?? coords?.lng ?? 73.8567;
+        const defaultCenter: [number, number] = [initialLat, initialLng];
+        const defaultZoom = (latitude && longitude) || coords ? 16 : 13;
 
         let map: any;
         try {
@@ -105,32 +132,10 @@ export default function LocationPicker({
           maxZoom: 19,
         }).addTo(map);
 
-        const customIcon = L.divIcon({
-          html: `<div style="
-            background: #3b82f6;
-            width: 32px;
-            height: 32px;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          "><div style="
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-radius: 50%;
-            transform: rotate(45deg);
-          "></div></div>`,
-          className: '',
-          iconSize: [32, 32],
-          iconAnchor: [16, 32],
-        });
+        const icon = createCustomIcon(L);
 
-        if (coords) {
-          markerRef.current = L.marker([coords.lat, coords.lng], { icon: customIcon }).addTo(map);
+        if (initialLat && initialLng && (latitude || coords)) {
+          markerRef.current = L.marker([initialLat, initialLng], { icon }).addTo(map);
         }
 
         map.on('click', async (e: any) => {
@@ -138,7 +143,7 @@ export default function LocationPicker({
           if (markerRef.current) {
             markerRef.current.setLatLng([lat, lng]);
           } else {
-            markerRef.current = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+            markerRef.current = L.marker([lat, lng], { icon: createCustomIcon(L) }).addTo(map);
           }
           setCoords({ lat, lng });
           const address = await reverseGeocode(lat, lng);
@@ -146,11 +151,19 @@ export default function LocationPicker({
         });
 
         mapInstanceRef.current = map;
+
+        // Force resize recalculations
         setTimeout(() => {
           if (mapInstanceRef.current) {
             mapInstanceRef.current.invalidateSize();
           }
-        }, 150);
+        }, 200);
+
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.invalidateSize();
+          }
+        }, 500);
       } catch (err) {
         console.error('Error initializing map:', err);
       } finally {
@@ -175,6 +188,26 @@ export default function LocationPicker({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sync map position and marker when props update (e.g. after async shop API response)
+  useEffect(() => {
+    if (latitude && longitude && mapInstanceRef.current && leafletModuleRef.current) {
+      const L = leafletModuleRef.current;
+      setCoords({ lat: latitude, lng: longitude });
+
+      mapInstanceRef.current.setView([latitude, longitude], 16);
+
+      if (markerRef.current) {
+        markerRef.current.setLatLng([latitude, longitude]);
+      } else {
+        markerRef.current = L.marker([latitude, longitude], { icon: createCustomIcon(L) }).addTo(
+          mapInstanceRef.current
+        );
+      }
+
+      mapInstanceRef.current.invalidateSize();
+    }
+  }, [latitude, longitude]);
+
   // Detect user's current location
   const handleDetectLocation = async () => {
     if (!navigator.geolocation) return;
@@ -183,31 +216,7 @@ export default function LocationPicker({
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude: lat, longitude: lng } = position.coords;
-        const L = (await import('leaflet')).default;
-
-        const customIcon = L.divIcon({
-          html: `<div style="
-            background: #3b82f6;
-            width: 32px;
-            height: 32px;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          "><div style="
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-radius: 50%;
-            transform: rotate(45deg);
-          "></div></div>`,
-          className: '',
-          iconSize: [32, 32],
-          iconAnchor: [16, 32],
-        });
+        const L = leafletModuleRef.current || (await import('leaflet')).default;
 
         if (mapInstanceRef.current) {
           mapInstanceRef.current.setView([lat, lng], 16);
@@ -215,8 +224,11 @@ export default function LocationPicker({
           if (markerRef.current) {
             markerRef.current.setLatLng([lat, lng]);
           } else {
-            markerRef.current = L.marker([lat, lng], { icon: customIcon }).addTo(mapInstanceRef.current);
+            markerRef.current = L.marker([lat, lng], { icon: createCustomIcon(L) }).addTo(
+              mapInstanceRef.current
+            );
           }
+          mapInstanceRef.current.invalidateSize();
         }
 
         setCoords({ lat, lng });
@@ -236,8 +248,8 @@ export default function LocationPicker({
   return (
     <div className={`space-y-2 ${className}`}>
       <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          <MapPin className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" />
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+          <MapPin className="w-3.5 h-3.5 text-primary" />
           Pin Shop Location on Map
         </label>
         <button
@@ -256,9 +268,9 @@ export default function LocationPicker({
       </div>
 
       <div
-        className={`relative rounded-xl overflow-hidden border border-border ${mapHeight} bg-muted`}
+        className={`relative rounded-xl overflow-hidden border border-border ${mapHeight} bg-muted z-0`}
       >
-        <div ref={mapContainerRef} className="w-full h-full z-0" />
+        <div ref={mapContainerRef} className="w-full h-full min-h-[192px] z-0" />
         {!coords && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <div className="bg-card/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md border border-border">
