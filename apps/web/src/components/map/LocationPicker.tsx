@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, Crosshair, Loader2 } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
 
 interface LocationPickerProps {
   latitude?: number | null;
@@ -127,9 +128,8 @@ export default function LocationPicker({
           });
         }
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19,
         }).addTo(map);
 
@@ -154,17 +154,15 @@ export default function LocationPicker({
         mapInstanceRef.current = map;
 
         // Force resize recalculations
+        requestAnimationFrame(() => {
+          if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+        });
         setTimeout(() => {
-          if (mapInstanceRef.current) {
-            mapInstanceRef.current.invalidateSize();
-          }
-        }, 200);
-
+          if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+        }, 150);
         setTimeout(() => {
-          if (mapInstanceRef.current) {
-            mapInstanceRef.current.invalidateSize();
-          }
-        }, 500);
+          if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+        }, 400);
       } catch (err) {
         console.error('Error initializing map:', err);
       } finally {
@@ -176,6 +174,7 @@ export default function LocationPicker({
 
     return () => {
       isMounted = false;
+      isInitializingRef.current = false;
       if (mapInstanceRef.current) {
         try {
           mapInstanceRef.current.remove();
