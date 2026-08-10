@@ -364,8 +364,15 @@ export default function AuthContainer({ initialMode = 'login', onSuccess }: Auth
                     />
                   </div>
                   {devOtpHint && (
-                    <div className="mt-2 text-xs p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
-                      <strong>Dev Hint OTP:</strong> <span className="font-mono font-bold tracking-wider">{devOtpHint}</span>
+                    <div className="mt-2 text-xs p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-medium flex items-center justify-between">
+                      <span><strong>Dev Hint OTP:</strong> <span className="font-mono font-bold tracking-wider text-sm ml-1">{devOtpHint}</span></span>
+                      <button
+                        type="button"
+                        onClick={() => setOtp(devOtpHint)}
+                        className="text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-semibold transition-colors"
+                      >
+                        Auto-fill
+                      </button>
                     </div>
                   )}
                 </div>

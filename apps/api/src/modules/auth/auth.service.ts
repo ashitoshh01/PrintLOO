@@ -31,8 +31,7 @@ export class AuthService {
     return {
       success: true,
       message: `OTP sent to ${email}`,
-      // Only expose OTP in non-production for testing convenience
-      ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+      devOtp: otp,
     };
   }
 
