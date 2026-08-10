@@ -15,5 +15,8 @@
   },
   "devDependencies": {
     "turbo": "latest"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
   }
 }

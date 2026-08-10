@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import * as path from 'path';
 import * as crypto from 'crypto';
-const pdfParse = require('pdf-parse');
+import { PDFDocument } from 'pdf-lib';
 
 @Injectable()
 export class UploadsService {
@@ -14,6 +14,33 @@ export class UploadsService {
     }
   }
 
+  private async countPdfPages(buffer: Buffer): Promise<number> {
+    try {
+      const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+      const count = pdfDoc.getPageCount();
+      if (count > 0) return count;
+    } catch (err: any) {
+      console.warn(`[pdf-lib Warning] Could not parse PDF with pdf-lib: ${err?.message}`);
+    }
+
+    try {
+      const str = buffer.toString('binary');
+      const countMatches = str.match(/\/Count\s+(\d+)/g);
+      if (countMatches && countMatches.length > 0) {
+        const counts = countMatches
+          .map(m => parseInt(m.replace(/\/Count\s+/, ''), 10))
+          .filter(n => !isNaN(n) && n > 0);
+        if (counts.length > 0) return Math.max(...counts);
+      }
+      const pageMatches = str.match(/\/Type\s*\/Page\b/g);
+      if (pageMatches && pageMatches.length > 0) return pageMatches.length;
+    } catch (err: any) {
+      // Ignore fallback regex error
+    }
+
+    return 1;
+  }
+
   private async uploadToCloudinary(
     buffer: Buffer,
     shopId: string,
@@ -21,9 +48,9 @@ export class UploadsService {
   ): Promise<{ publicId: string; secureUrl: string }> {
     const uuid = crypto.randomUUID();
     const timestamp = Date.now();
-    const isPdf = ext === '.pdf';
-    const publicId = isPdf ? `${uuid}-${timestamp}${ext}` : `${uuid}-${timestamp}`;
-    const resourceType = isPdf ? 'raw' : 'auto';
+    const isImage = ['.jpg', '.jpeg', '.png', '.webp', '.svg', '.bmp'].includes(ext);
+    const publicId = isImage ? `${uuid}-${timestamp}` : `${uuid}-${timestamp}${ext}`;
+    const resourceType = isImage ? 'image' : 'raw';
 
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -49,18 +76,26 @@ export class UploadsService {
   async uploadFile(file: Express.Multer.File, userId: string, shopId: string) {
     if (!file) throw new BadRequestException('File is required');
     const ext = path.extname(file.originalname).toLowerCase();
-    const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const allowedExts = [
+      '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt', '.rtf', '.csv',
+      '.jpg', '.jpeg', '.png', '.webp', '.svg', '.bmp'
+    ];
     if (!allowedExts.includes(ext)) {
-      throw new BadRequestException('Invalid file type. Allowed: PDF, JPG, JPEG, PNG');
+      throw new BadRequestException(`Invalid file type (${ext}). Allowed formats: PDF, DOCX, DOC, PPTX, XLSX, TXT, PNG, JPG, WEBP`);
     }
 
     let pageCount = 1;
     if (ext === '.pdf') {
+      pageCount = await this.countPdfPages(file.buffer);
+    } else if (ext === '.docx' || ext === '.doc') {
       try {
-        const data = await pdfParse(file.buffer);
-        pageCount = data.numpages || 1;
-      } catch (err) {
-        throw new BadRequestException('Failed to parse PDF file');
+        const content = file.buffer.toString('binary');
+        const pageBreaks = (content.match(/<w:lastRenderedPageBreak\/>|<w:br[^>]*w:type="page"/g) || []).length;
+        if (pageBreaks > 0) {
+          pageCount = pageBreaks + 1;
+        }
+      } catch (err: any) {
+        pageCount = 1;
       }
     }
 
@@ -116,7 +151,10 @@ export class UploadsService {
     if (fileId.startsWith('http')) {
       return { url: fileId };
     }
-    return { url: `https://res.cloudinary.com/depohq5yg/image/upload/${fileId}` };
+    const isImage = !fileId.match(/\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt|rtf|csv)$/i);
+    const resourceType = isImage ? 'image' : 'raw';
+    const url = cloudinary.url(fileId, { resource_type: resourceType, secure: true });
+    return { url };
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Printer, File, Copy, FilePlus, Palette, Square } from 'lucide-react';
+import { Printer, File, Copy, FilePlus, Palette, Square, FileText } from 'lucide-react';
 import { PrintConfig } from '@/types/order';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -10,9 +10,10 @@ interface PrintConfigFormProps {
   printer?: any;
   onChange: (config: PrintConfig) => void;
   initialConfig?: PrintConfig;
+  fileData?: { name?: string; pages?: number } | null;
 }
 
-export default function PrintConfigForm({ printer, onChange, initialConfig }: PrintConfigFormProps) {
+export default function PrintConfigForm({ printer, onChange, initialConfig, fileData }: PrintConfigFormProps) {
   const [config, setConfig] = useState<PrintConfig>(initialConfig || {
     colorMode: 'bw',
     sides: 'single',
@@ -31,6 +32,27 @@ export default function PrintConfigForm({ printer, onChange, initialConfig }: Pr
 
   return (
     <div className="space-y-6">
+      {/* File Document Summary Header */}
+      {fileData && (
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-primary/10 rounded-lg text-primary">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground truncate max-w-[200px] sm:max-w-xs">
+                {fileData.name || 'Document'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Total Pages: <span className="font-semibold text-foreground">{fileData.pages || 1} {fileData.pages === 1 ? 'page' : 'pages'}</span>
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-lg shrink-0">
+            {fileData.pages || 1} {fileData.pages === 1 ? 'Page' : 'Pages'}
+          </span>
+        </div>
+      )}
       {/* Color Mode */}
       <div className="space-y-3">
         <Label className="text-base font-semibold">Color Mode</Label>

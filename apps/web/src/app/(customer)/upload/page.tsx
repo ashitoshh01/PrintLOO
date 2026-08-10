@@ -201,6 +201,7 @@ function UploadContent() {
                   initialConfig={config as any}
                   onChange={setConfig as any}
                   printer={{ supportsColor: true, supportsDuplex: true } as any}
+                  fileData={fileData}
                 />
                 <button
                   onClick={() => setStep(2)}

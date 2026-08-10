@@ -24,7 +24,7 @@ export default function FileUploader({ shopId, onUploadComplete }: FileUploaderP
       if (hasSizeError) {
         setError('One or more files exceed the 25MB limit.');
       } else {
-        setError('Invalid file type or size. Max 25MB, PDF/JPG/PNG only.');
+        setError('Invalid file type or size. Max 25MB, supported: PDF, DOCX, DOC, PPTX, XLSX, TXT, PNG, JPG.');
       }
       return;
     }
@@ -76,8 +76,18 @@ export default function FileUploader({ shopId, onUploadComplete }: FileUploaderP
     multiple: true,
     accept: {
       'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.ms-powerpoint': ['.ppt'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'text/plain': ['.txt'],
+      'text/csv': ['.csv'],
+      'application/rtf': ['.rtf'],
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/png': ['.png'],
+      'image/webp': ['.webp'],
     },
     disabled: isUploading || uploadProgress === 100,
   });
@@ -130,7 +140,7 @@ export default function FileUploader({ shopId, onUploadComplete }: FileUploaderP
             <h3 className="font-heading font-semibold text-xl mb-2">Upload your documents</h3>
             <p className="text-muted-foreground mb-1">Drag and drop your file(s) here, or click to browse</p>
             <p className="text-xs text-muted-foreground mt-4 border border-border rounded px-3 py-1 bg-background/50">
-              PDF, JPG, PNG (Select single or multiple files, Max 25MB each)
+              PDF, DOCX, DOC, PPTX, XLSX, TXT, PNG, JPG (Select single or multiple files, Max 25MB each)
             </p>
           </div>
         )}
