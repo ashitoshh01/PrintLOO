@@ -372,21 +372,21 @@ function QueueDashboard() {
 
                       {/* Action Buttons */}
                       <div className="flex items-center gap-1.5">
-                        {(order.status === 'QUEUED' || order.status === 'PENDING') && (
+                        {(order.status === 'QUEUED' || order.status === 'PENDING' || order.status === 'PROCESSING') && (
                           <button
                             onClick={() => handleStatusChange(order.id, 'PRINTING')}
                             className="bg-brand-accent hover:bg-brand-accent/90 text-white px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:scale-[1.02] shadow-sm"
                           >
-                            <Play className="w-3.5 h-3.5" /> Print
+                            <Play className="w-3.5 h-3.5" /> Start Print
                           </button>
                         )}
 
-                        {order.status === 'PRINTING' && (
+                        {(order.status === 'PRINTING' || order.status === 'PROCESSING' || order.status === 'QUEUED' || order.status === 'PENDING') && (
                           <button
                             onClick={() => handleStatusChange(order.id, 'COMPLETED')}
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:scale-[1.02] shadow-sm"
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-[1.02] shadow-md shadow-emerald-500/30 ring-2 ring-emerald-500/20"
                           >
-                            <Check className="w-3.5 h-3.5" /> Done
+                            <Check className="w-3.5 h-3.5" /> Mark Complete
                           </button>
                         )}
 
