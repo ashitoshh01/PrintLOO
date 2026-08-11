@@ -90,16 +90,19 @@ export class OrdersService {
   }
 
   async getShopOrders(shopId: string, operatorId: string) {
-    // Verify operator belongs to this shop
+    // Verify operator belongs to this shop (or user is ADMIN)
     const user = await this.prisma.user.findUnique({ where: { id: operatorId } });
-    if (user?.shopId !== shopId) throw new ForbiddenException('Access denied');
+    if (user?.role !== 'ADMIN' && user?.shopId !== shopId) throw new ForbiddenException('Access denied');
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const orders = await this.prisma.printOrder.findMany({
       where: {
         shopId,
-        createdAt: { gte: today },
+        OR: [
+          { status: { in: ['PENDING', 'QUEUED', 'PROCESSING', 'PRINTING'] } },
+          { createdAt: { gte: today } },
+        ],
       },
       orderBy: { tokenNumber: 'asc' },
       include: { payment: true, user: { select: { name: true, email: true } } },
@@ -117,7 +120,7 @@ export class OrdersService {
       this.prisma.user.findUnique({ where: { id: operatorId } }),
     ]);
     if (!order) throw new NotFoundException('Order not found');
-    if (user?.shopId !== order.shopId) throw new ForbiddenException('Access denied');
+    if (user?.role !== 'ADMIN' && user?.shopId !== order.shopId) throw new ForbiddenException('Access denied');
 
     const updatedOrder = await this.prisma.printOrder.update({
       where: { id: orderId },

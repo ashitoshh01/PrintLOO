@@ -6,10 +6,11 @@ import { orderService } from '@/services/orderService';
 import { useAuthStore } from '@/store/authStore';
 import { PrintOrder, OrderStatus } from '@/types/order';
 import { formatCurrency } from '@/utils/formatters';
+import FilePreviewModal from '@/components/shop/FilePreviewModal';
 import { 
   Printer, FileText, Play, Check, XCircle, RotateCcw, 
-  RefreshCw, Users, Clock, Zap, ChevronRight, AlertTriangle,
-  Volume2, VolumeX, Layers, ArrowRight
+  RefreshCw, Clock, Zap, AlertTriangle,
+  Volume2, VolumeX, Layers, Eye, Download
 } from 'lucide-react';
 
 type QueueTab = 'active' | 'completed' | 'failed';
@@ -23,6 +24,8 @@ function QueueDashboard() {
   const [activeTab, setActiveTab] = useState<QueueTab>('active');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [previewOrder, setPreviewOrder] = useState<{ fileUrl: string; fileName: string } | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<{ orderId: string; tokenNumber: number; customerName: string } | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const prevOrderCountRef = useRef(0);
@@ -31,7 +34,7 @@ function QueueDashboard() {
     if (!shopId) return;
     try {
       const res = await orderService.getShopOrders(shopId);
-      const newOrders = res.data;
+      const newOrders = Array.isArray(res.data) ? res.data : [];
       
       // Play notification sound for new orders
       if (soundEnabled && prevOrderCountRef.current > 0 && newOrders.length > prevOrderCountRef.current) {
@@ -60,7 +63,7 @@ function QueueDashboard() {
     // WebSocket for real-time updates
     if (shopId) {
       socketRef.current = io(`${process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001'}/queue`, {
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
       });
       socketRef.current.emit('join:shop', shopId);
       socketRef.current.on('queue:updated', () => fetchOrders());
@@ -131,6 +134,7 @@ function QueueDashboard() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
@@ -337,12 +341,34 @@ function QueueDashboard() {
                     </div>
 
                     {/* Right: Status + Actions */}
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
                       {/* Status Badge */}
                       <div className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
                         {order.status === 'PRINTING' && <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse"></span>}
                         {statusStyle.label}
                       </div>
+
+                      {/* File Preview & Download */}
+                      {order.fileUrl && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setPreviewOrder({ fileUrl: order.fileUrl, fileName: order.fileName })}
+                            className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                            title="Preview document"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <a
+                            href={order.fileUrl}
+                            download={order.fileName}
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors"
+                            title="Download document"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        </div>
+                      )}
 
                       {/* Action Buttons */}
                       <div className="flex items-center gap-1.5">
@@ -375,7 +401,11 @@ function QueueDashboard() {
 
                         {order.status !== 'COMPLETED' && order.status !== 'FAILED' && (
                           <button
-                            onClick={() => handleStatusChange(order.id, 'FAILED')}
+                            onClick={() => setConfirmCancel({
+                              orderId: order.id,
+                              tokenNumber: order.tokenNumber,
+                              customerName: (order as any)?.user?.name || `User ${order.userId.slice(0, 6)}`,
+                            })}
                             className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                             title="Cancel / Mark Failed"
                           >
@@ -401,7 +431,71 @@ function QueueDashboard() {
         </div>
       </div>
     </div>
-  );
+
+    {/* File Preview Modal */}
+    {previewOrder && (
+      <FilePreviewModal
+        fileUrl={previewOrder.fileUrl}
+        fileName={previewOrder.fileName}
+        onClose={() => setPreviewOrder(null)}
+      />
+    )}
+
+    {/* ── Cancel Confirmation Dialog ── */}
+    {confirmCancel && (
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-150"
+        onClick={(e) => { if (e.target === e.currentTarget) setConfirmCancel(null); }}
+      >
+        <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-150 overflow-hidden">
+          {/* Red accent top strip */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-rose-500 to-red-600" />
+
+          <div className="p-6">
+            {/* Icon */}
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
+              <XCircle className="w-7 h-7 text-rose-500" />
+            </div>
+
+            {/* Title */}
+            <h3 className="text-lg font-heading font-bold text-center mb-1">Cancel this job?</h3>
+            <p className="text-sm text-muted-foreground text-center mb-5">
+              You are about to cancel{' '}
+              <span className="font-semibold text-foreground">Token #{confirmCancel.tokenNumber}</span>{' '}
+              for{' '}
+              <span className="font-semibold text-foreground">{confirmCancel.customerName}</span>.
+              This will mark the order as <span className="text-rose-500 font-semibold">Failed</span> and remove it from the active queue.
+            </p>
+
+            {/* Warning callout */}
+            <div className="flex items-start gap-2.5 bg-rose-500/8 border border-rose-500/20 rounded-xl p-3 mb-5 text-xs text-rose-600">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>This action cannot be undone. The customer will see their order as failed.</span>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmCancel(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border hover:bg-muted transition-colors text-sm font-semibold"
+              >
+                Keep Job
+              </button>
+              <button
+                onClick={() => {
+                  handleStatusChange(confirmCancel.orderId, 'FAILED');
+                  setConfirmCancel(null);
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold transition-all hover:scale-[1.02] shadow-md shadow-rose-500/20 flex items-center justify-center gap-2"
+              >
+                <XCircle className="w-4 h-4" /> Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </>);
 }
 
 export default function ShopQueuePage() {

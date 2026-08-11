@@ -5,11 +5,12 @@ import { orderService } from '@/services/orderService';
 import { useAuthStore } from '@/store/authStore';
 import { PrintOrder, OrderStatus } from '@/types/order';
 import { formatCurrency, formatDate } from '@/utils/formatters';
+import FilePreviewModal from '@/components/shop/FilePreviewModal';
 import {
   FileText, Calendar, Clock, CreditCard, Search, Filter,
-  RefreshCw, AlertTriangle, Printer, Check, XCircle, Users,
-  Download, ChevronDown, ChevronUp, ExternalLink, TrendingUp,
-  Hash, ArrowDownToLine, Eye
+  RefreshCw, AlertTriangle, Printer, Check, XCircle,
+  Download, ChevronDown, ChevronUp, TrendingUp,
+  Hash, Eye
 } from 'lucide-react';
 
 type DateFilter = 'today' | 'week' | 'month' | 'all';
@@ -26,6 +27,7 @@ export default function ShopOrdersPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [previewOrder, setPreviewOrder] = useState<{ fileUrl: string; fileName: string } | null>(null);
 
   const fetchOrders = useCallback(async () => {
     if (!shopId) return;
@@ -142,6 +144,7 @@ export default function ShopOrdersPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
@@ -433,21 +436,29 @@ export default function ShopOrdersPage() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                         <div>
-                          <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">File</p>
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-primary shrink-0" />
-                            <span className="truncate font-medium">{order.fileName}</span>
-                          </div>
-                          {order.fileUrl && (
-                            <a 
-                              href={order.fileUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-brand-accent hover:underline mt-1 font-medium"
-                            >
-                              <Eye className="w-3 h-3" /> View / Download
-                            </a>
-                          )}
+                           <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">File</p>
+                           <div className="flex items-center gap-2 mb-2">
+                             <FileText className="w-4 h-4 text-primary shrink-0" />
+                             <span className="truncate font-medium text-sm">{order.fileName}</span>
+                           </div>
+                           {order.fileUrl && (
+                             <div className="flex items-center gap-2 flex-wrap">
+                               <button
+                                 onClick={(e) => { e.stopPropagation(); setPreviewOrder({ fileUrl: order.fileUrl, fileName: order.fileName }); }}
+                                 className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg font-semibold transition-colors"
+                               >
+                                 <Eye className="w-3.5 h-3.5" /> Preview
+                               </button>
+                               <a
+                                 href={order.fileUrl}
+                                 download={order.fileName}
+                                 onClick={(e) => e.stopPropagation()}
+                                 className="inline-flex items-center gap-1.5 text-xs bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg font-semibold transition-colors"
+                               >
+                                 <Download className="w-3.5 h-3.5" /> Download
+                               </a>
+                             </div>
+                           )}
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Print Config</p>
@@ -486,5 +497,14 @@ export default function ShopOrdersPage() {
 
       </div>
     </div>
-  );
+
+    {/* File Preview Modal */}
+    {previewOrder && (
+      <FilePreviewModal
+        fileUrl={previewOrder.fileUrl}
+        fileName={previewOrder.fileName}
+        onClose={() => setPreviewOrder(null)}
+      />
+    )}
+  </>);
 }

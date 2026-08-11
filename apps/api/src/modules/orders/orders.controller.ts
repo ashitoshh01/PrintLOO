@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Param, Patch, Body, UseGuards, NotFoundException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -41,6 +41,7 @@ export class OrdersController {
     const order = await this.ordersService.getOrder(id, user.id, user.role, user.shopId);
     // Then get detailed queue status
     const queueStatus = await this.queueService.getOrderQueueStatus(id);
+    if (!queueStatus) throw new NotFoundException('Queue status not found');
     return queueStatus;
   }
 

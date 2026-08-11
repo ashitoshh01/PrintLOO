@@ -153,8 +153,8 @@ function QueueContent() {
   useEffect(() => {
     if (!orderId || !queueStatus?.shopId) return;
 
-    const socket = io(`${process.env.NEXT_PUBLIC_SOCKET_URL}/queue`, {
-      transports: ['websocket'],
+    const socket = io(`${process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001'}/queue`, {
+      transports: ['websocket', 'polling'],
     });
 
     socketRef.current = socket;
