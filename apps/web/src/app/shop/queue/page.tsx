@@ -89,6 +89,54 @@ function QueueDashboard() {
     }
   };
 
+  const handleAutoPrint = async (order: PrintOrder) => {
+    // 1. Mark as PRINTING
+    handleStatusChange(order.id, 'PRINTING');
+
+    if (!order.fileUrl) return;
+
+    // 2. Alert the user of required printer settings
+    const colorMode = order.config?.colorMode === 'bw' ? 'Black & White' : 'Color';
+    const sides = order.config?.sides === 'single' ? 'Single Sided' : 'Double Sided';
+    const copies = order.config?.copies || 1;
+    
+    alert(
+      `🖨️ PRINTER CONFIGURATION REQUIRED:\n\n` +
+      `Please set these in your Print Dialog:\n` +
+      `• Color: ${colorMode}\n` +
+      `• Sides: ${sides}\n` +
+      `• Copies: ${copies}\n\n` +
+      `Click OK to open the print dialog.`
+    );
+
+    // 3. Auto-trigger print using an iframe
+    try {
+      const response = await fetch(order.fileUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (e) {
+            console.error('Print iframe error:', e);
+            window.open(blobUrl, '_blank');
+          }
+        }, 500);
+      };
+    } catch (error) {
+      console.error('Failed to auto-print:', error);
+      window.open(order.fileUrl, '_blank');
+    }
+  };
+
   // Filter orders
   const activeOrders = orders.filter(o => ['PENDING', 'QUEUED', 'PROCESSING', 'PRINTING'].includes(o.status));
   const completedOrders = orders.filter(o => o.status === 'COMPLETED');
@@ -374,7 +422,7 @@ function QueueDashboard() {
                       <div className="flex items-center gap-1.5">
                         {(order.status === 'QUEUED' || order.status === 'PENDING' || order.status === 'PROCESSING') && (
                           <button
-                            onClick={() => handleStatusChange(order.id, 'PRINTING')}
+                            onClick={() => handleAutoPrint(order)}
                             className="bg-brand-accent hover:bg-brand-accent/90 text-white px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all hover:scale-[1.02] shadow-sm"
                           >
                             <Play className="w-3.5 h-3.5" /> Start Print
