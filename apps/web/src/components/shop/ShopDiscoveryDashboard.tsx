@@ -448,6 +448,8 @@ export default function ShopDiscoveryDashboard() {
           {displayedShops.map((shop) => {
             const isFav = favouriteShopIds.includes(shop.id);
             const isSelected = selectedShop?.id === shop.id;
+            const displayAddress = shop.address || shop.location || '';
+            const hasAddress = displayAddress.trim().length > 0;
 
             return (
               <div
@@ -465,12 +467,12 @@ export default function ShopDiscoveryDashboard() {
                       <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors leading-tight">
                         {shop.name}
                       </h3>
-                      {shop.address && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                          <span>{shop.address}</span>
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1 flex items-center gap-1">
+                        <MapPin className={`w-3.5 h-3.5 shrink-0 ${!hasAddress ? 'opacity-50' : ''}`} />
+                        <span className={!hasAddress ? 'italic opacity-60' : ''}>
+                          {hasAddress ? displayAddress : "Location not provided"}
+                        </span>
+                      </p>
                     </div>
                     {/* Favourite Button */}
                     <button
