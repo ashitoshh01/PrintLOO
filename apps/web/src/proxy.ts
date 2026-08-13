@@ -12,7 +12,11 @@ export default function proxy(request: NextRequest) {
     pathname.startsWith('/files') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.includes('favicon')
+    pathname.includes('favicon') ||
+    pathname.includes('manifest') ||
+    pathname.includes('apple-touch-icon') ||
+    pathname.includes('android-chrome') ||
+    pathname.includes('icon-')
   ) {
     return NextResponse.next();
   }
@@ -28,5 +32,5 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|files).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|manifest.json|apple-touch-icon|android-chrome|files).*)'],
 };
