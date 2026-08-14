@@ -73,7 +73,7 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="w-full border-b border-border bg-card/95 backdrop-blur-md sticky top-0 z-50 transition-all">
+    <nav className="relative w-full border-b border-border bg-card/95 backdrop-blur-md sticky top-0 z-50 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center group">
@@ -187,9 +187,18 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Drawer Dropdown Menu */}
+      {/* Mobile Drawer Backdrop Overlay */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-border bg-card/98 backdrop-blur-xl px-4 pt-2 pb-6 space-y-4 shadow-xl transition-all animate-in slide-in-from-top duration-200">
+        <div
+          className="fixed inset-0 top-16 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-in fade-in duration-200"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Drawer Dropdown Menu (Overlaid over content) */}
+      {mobileMenuOpen && (
+        <div className="absolute top-full left-0 right-0 w-full md:hidden border-b border-border bg-card/98 backdrop-blur-xl px-4 pt-2 pb-6 space-y-4 shadow-2xl z-50 transition-all animate-in slide-in-from-top-2 duration-200 max-h-[calc(100vh-4rem)] overflow-y-auto">
           {isAuthenticated ? (
             <>
               {/* Mobile User Profile Header */}
