@@ -1,12 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
-import { Infinity, ShieldCheck, Mail, KeyRound, User as UserIcon, Store, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Infinity, ShieldCheck, Mail, KeyRound, User as UserIcon, Store, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react';
 import logoImg from '../../../public/logo.png';
 
 const LocationPicker = dynamic(() => import('@/components/map/LocationPicker'), { ssr: false });
@@ -46,6 +46,18 @@ export default function AuthContainer({ initialMode = 'login', onSuccess }: Auth
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState('');
   const [signupSuccessMsg, setSignupSuccessMsg] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (signupStep === 2 && resendTimer > 0) {
+      timer = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [signupStep, resendTimer]);
 
   // Handle Login
   const handleLogin = async (e: React.FormEvent) => {
@@ -88,12 +100,34 @@ export default function AuthContainer({ initialMode = 'login', onSuccess }: Auth
         setDevOtpHint(res.data.devOtp);
       }
       setSignupSuccessMsg(`OTP sent to ${signupEmail}`);
+      setResendTimer(30);
       setSignupStep(2);
     } catch (err: any) {
       const msg = err.response?.data?.message;
       setSignupError(Array.isArray(msg) ? msg.join(', ') : (typeof msg === 'string' ? msg : 'Failed to send OTP.'));
     } finally {
       setSignupLoading(false);
+    }
+  };
+
+  // Resend OTP
+  const handleResendOtp = async () => {
+    if (resendTimer > 0 || resendLoading) return;
+    setResendLoading(true);
+    setSignupError('');
+    try {
+      const res = await authService.sendOtp(signupEmail);
+      if (res.data?.devOtp) {
+        setDevOtpHint(res.data.devOtp);
+      }
+      setSignupSuccessMsg(`A new OTP has been sent to ${signupEmail}`);
+      setOtp('');
+      setResendTimer(30);
+    } catch (err: any) {
+      const msg = err.response?.data?.message;
+      setSignupError(Array.isArray(msg) ? msg.join(', ') : (typeof msg === 'string' ? msg : 'Failed to resend OTP.'));
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -375,6 +409,29 @@ export default function AuthContainer({ initialMode = 'login', onSuccess }: Auth
                       </button>
                     </div>
                   )}
+                  <div className="flex items-center justify-between text-xs mt-3 pt-2 border-t border-border/40">
+                    <span className="text-muted-foreground font-medium">Didn't receive code?</span>
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={resendTimer > 0 || resendLoading}
+                      className="text-primary hover:underline font-semibold disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed flex items-center gap-1.5 transition-all"
+                    >
+                      {resendLoading ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Resending...</span>
+                        </>
+                      ) : resendTimer > 0 ? (
+                        <span>Resend OTP in {resendTimer}s</span>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Resend OTP</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <button
